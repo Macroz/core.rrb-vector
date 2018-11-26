@@ -71,13 +71,13 @@
         (VecNode. (.-edit ^VecNode node)
                   (aclone ^objects (.-arr ^VecNode node)))))))
 
-;;; ranges
+;;; ranges-macro
 
-(defmacro ranges [nm node]
+(defmacro ranges-macro [nm node]
   `(ints (aget ~(with-meta `(.array ~nm ~node) {:tag 'objects}) 32)))
 
 (defn last-range [^NodeManager nm node]
-  (let [rngs (ranges nm node)
+  (let [rngs (ranges-macro nm node)
         i    (unchecked-dec-int (aget rngs 32))]
     (aget rngs i)))
 
@@ -98,7 +98,7 @@
   (if (.regular nm root)
     (> (bit-shift-right (unchecked-inc-int (int cnt)) (int 5))
        (bit-shift-left (int 1) (int shift)))
-    (let [rngs (ranges nm root)
+    (let [rngs (ranges-macro nm root)
           slc  (aget rngs 32)]
       (and (== slc (int 32))
            (or (== (int shift) (int 5))
@@ -147,7 +147,7 @@
   (let [arr (.array nm node)]
     (if (.regular nm node)
       (aget ^objects arr (dec (index-of-nil arr)))
-      (aget ^objects arr (unchecked-dec-int (aget (ranges nm node) 32))))))
+      (aget ^objects arr (unchecked-dec-int (aget (ranges-macro nm node) 32))))))
 
 (defn remove-leftmost-child [^NodeManager nm shift parent]
   (let [arr (.array nm parent)]
@@ -157,7 +157,7 @@
             new-arr  (object-array (if regular? 32 33))]
         (System/arraycopy arr 1 new-arr 0 31)
         (if-not regular?
-          (let [rngs     (ranges nm parent)
+          (let [rngs     (ranges-macro nm parent)
                 rng0     (aget rngs 0)
                 new-rngs (int-array 33)
                 lim      (aget rngs 32)]
@@ -192,7 +192,7 @@
           (recur (inc i))))
       (.node nm nil new-arr))
     (let [new-arr  (aclone ^objects (.array nm parent))
-          rngs     (ranges nm parent)
+          rngs     (ranges-macro nm parent)
           new-rngs (int-array 33)
           li       (dec (aget rngs 32))]
       (aset new-rngs 32 (aget rngs 32))
@@ -226,7 +226,7 @@
               (recur (inc j) (+ r step))))
           (aset rngs i (int (last-range nm child)))
           (.node nm nil new-arr))))
-    (let [rngs     (ranges nm parent)
+    (let [rngs     (ranges-macro nm parent)
           new-rngs (aclone rngs)
           i        (dec (aget rngs 32))
           new-arr  (aclone ^objects (.array nm parent))]
@@ -265,7 +265,7 @@
         arr      (.array nm node)
         li       (index-of-nil arr)
         new-arr  (object-array (if reg? 32 33))
-        rngs     (if-not (.regular nm node) (ranges nm node))
+        rngs     (if-not (.regular nm node) (ranges-macro nm node))
         cret     (if (== shift 5)
                    (.node nm nil tail)
                    (fold-tail nm am

@@ -1,5 +1,5 @@
 (ns clojure.core.rrb-vector.transients
-  (:require [clojure.core.rrb-vector.nodes :refer [ranges last-range]])
+  (:require [clojure.core.rrb-vector.nodes :refer [ranges-macro last-range]])
   (:import (clojure.core.rrb_vector.nodes NodeManager)
            (clojure.core ArrayManager)
            (java.util.concurrent.atomic AtomicReference)))
@@ -110,7 +110,7 @@
                           (recur editable-child (- shift 5))))))))
               ret)
           (let [arr  (.array nm ret)
-                rngs (ranges nm ret)
+                rngs (ranges-macro nm ret)
                 li   (unchecked-dec-int (aget rngs 32))
                 cret (if (== shift 5)
                        nil
@@ -172,7 +172,7 @@
               (let [arr (.array nm ret)]
                 (aset ^objects arr subidx nil)
                 ret)))
-          (let [rngs   (ranges nm ret)
+          (let [rngs   (ranges-macro nm ret)
                 subidx (bit-and
                         (bit-shift-right (unchecked-dec-int cnt) shift)
                         0x1f)
@@ -248,7 +248,7 @@
                 (aset ^objects arr subidx child)
                 (recur (unchecked-subtract-int shift 5) child))))
           (let [arr    (.array nm ret)
-                rngs   (ranges nm ret)
+                rngs   (ranges-macro nm ret)
                 subidx (bit-and (bit-shift-right i shift) 0x1f)
                 subidx (loop [subidx subidx]
                          (if (< i (aget rngs subidx))

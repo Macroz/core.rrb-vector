@@ -1,7 +1,7 @@
 (ns clojure.core.rrb-vector.debug
   (:require clojure.core.rrb-vector.rrbt
             [clojure.core.rrb-vector.nodes
-             :refer [ranges object-nm primitive-nm]]
+             :refer [ranges-macro object-nm primitive-nm]]
             [clojure.core.rrb-vector :as fv])
   (:import (clojure.lang PersistentVector)
            (clojure.core Vec)
@@ -38,7 +38,7 @@
                               d  (.lastIndexOf cn ".")]
                           (subs cn (inc d))))
                 (if-not (or (zero? shift) (.regular nm node))
-                  (print ":" (seq (ranges nm node))))
+                  (print ":" (seq (ranges-macro nm node))))
                 (if (zero? shift)
                   (print ":" (vec (.array nm node))))
                 (println)
@@ -98,9 +98,9 @@
     (same-coll? v1 v2)))
 
 (defn check-catvec [& counts]
-  (let [ranges (map range counts)
-        v1 (apply concat ranges)
-        v2 (apply fv/catvec (map fv/vec ranges))]
+  (let [ranges-macro (map range counts)
+        v1 (apply concat ranges-macro)
+        v2 (apply fv/catvec (map fv/vec ranges-macro))]
     (same-coll? v1 v2)))
 
 (defn generative-check-subvec [iterations max-init-cnt slices]

@@ -4,7 +4,7 @@
              :refer [PSliceableVector slicev
                      PSpliceableVector splicev]]
             [clojure.core.rrb-vector.nodes
-             :refer [ranges overflow? last-range regular-ranges
+             :refer [ranges-macro overflow? last-range regular-ranges
                      first-child last-child remove-leftmost-child
                      replace-leftmost-child replace-rightmost-child
                      fold-tail new-path index-of-nil
@@ -311,7 +311,7 @@
         (System/arraycopy arr 0 new-arr 0 end)
         (.node nm nil new-arr))
       (let [regular?  (.regular nm node)
-            rngs      (if-not regular? (ranges nm node))
+            rngs      (if-not regular? (ranges-macro nm node))
             i         (bit-and (bit-shift-right (unchecked-dec-int end) shift)
                                (int 0x1f))
             i         (if regular?
@@ -374,7 +374,7 @@
         (.node nm nil new-arr))
       (let [regular? (.regular nm node)
             arr      (.array nm node)
-            rngs     (if-not regular? (ranges nm node))
+            rngs     (if-not regular? (ranges-macro nm node))
             i        (bit-and (bit-shift-right start shift) (int 0x1f))
             i        (if regular?
                        i
@@ -551,7 +551,7 @@
                                (aget ^objects arr idx)
                                (unchecked-subtract-int shift (int 5)))))))
                 (let [arr  (.array nm node)
-                      rngs (ranges nm node)
+                      rngs (ranges-macro nm node)
                       idx  (loop [j (bit-and (bit-shift-right i shift) (int 0x1f))]
                              (if (< i (aget rngs j))
                                j
@@ -601,7 +601,7 @@
             (let [new-arr  (object-array 33)
                   new-rngs (ints (int-array 33))
                   new-root (.node nm (.edit nm root) new-arr)
-                  root-total-range (aget (ranges nm root) (int 31))]
+                  root-total-range (aget (ranges-macro nm root) (int 31))]
               (doto new-arr
                 (aset (int 0)  root)
                 (aset (int 1)  (.newPath this (.edit nm root) shift tail-node))
@@ -799,7 +799,7 @@
                   (recur (aget ^objects (.array nm node)
                                (bit-and (bit-shift-right i shift) (int 0x1f)))
                          (unchecked-subtract-int shift (int 5)))))
-              (let [rngs (ranges nm node)
+              (let [rngs (ranges-macro nm node)
                     j    (loop [j (bit-and (bit-shift-right i shift) (int 0x1f))]
                            (if (< i (aget rngs j))
                              j
@@ -835,7 +835,7 @@
                                 tail-node))))))
         ret)
       (let [arr  (aclone ^objects (.array nm node))
-            rngs (ranges nm node)
+            rngs (ranges-macro nm node)
             li   (unchecked-dec-int (aget rngs 32))
             ret  (.node nm (.edit nm node) arr)
             cret (if (== shift (int 5))
@@ -892,7 +892,7 @@
       (let [subidx (int (bit-and
                          (bit-shift-right (unchecked-dec-int cnt) (int shift))
                          (int 0x1f)))
-            rngs   (ranges nm node)
+            rngs   (ranges-macro nm node)
             subidx (int (loop [subidx subidx]
                           (if (or (zero? (aget rngs (unchecked-inc-int subidx)))
                                   (== subidx (int 31)))
@@ -992,7 +992,7 @@
               (recur (unchecked-subtract-int shift (int 5)) child))))
         node)
       (let [arr    (aclone ^objects (.array nm node))
-            rngs   (ranges nm node)
+            rngs   (ranges-macro nm node)
             subidx (bit-and (bit-shift-right i shift) (int 0x1f))
             subidx (loop [subidx subidx]
                      (if (< i (aget rngs subidx))
@@ -1283,7 +1283,7 @@
       (.alength am arr)
       (if (.regular nm node)
         (index-of-nil arr)
-        (let [rngs (ranges nm node)]
+        (let [rngs (ranges-macro nm node)]
           (aget rngs 32))))))
 
 (defn subtree-branch-count [^NodeManager nm ^ArrayManager am node shift]
@@ -1297,7 +1297,7 @@
           (if-let [child (aget ^objects arr i)]
             (recur (inc i) (+ sbc (long (slot-count nm am child cs))))
             sbc)))
-      (let [lim (aget (ranges nm node) 32)]
+      (let [lim (aget (ranges-macro nm node) 32)]
         (loop [i 0 sbc 0]
           (if (== i lim)
             sbc
@@ -1370,13 +1370,13 @@
   (let [arr  (.array nm node)
         rngs (if (.regular nm node)
                (ints (regular-ranges shift cnt))
-               (ranges nm node))
+               (ranges-macro nm node))
         cs   (if rngs (aget rngs 32) (index-of-nil arr))
         cseq (fn cseq [c r]
                (let [arr  (.array nm c)
                      rngs (if (.regular nm c)
                             (ints (regular-ranges (- shift 5) r))
-                            (ranges nm c))
+                            (ranges-macro nm c))
                      gcs  (if rngs (aget rngs 32) (index-of-nil arr))]
                  (map list (take gcs arr) (take gcs (map - rngs (cons 0 rngs))))))]
     (mapcat cseq (take cs arr) (take cs (map - rngs (cons 0 rngs))))))
@@ -1475,7 +1475,7 @@
           ccnt1 (if (.regular nm n1)
                   (let [m (mod cnt1 (bit-shift-left 1 shift))]
                     (if (zero? m) (bit-shift-left 1 shift) m))
-                  (let [rngs (ranges nm n1)
+                  (let [rngs (ranges-macro nm n1)
                         i    (dec (aget rngs 32))]
                     (if (zero? i)
                       (aget rngs 0)
@@ -1483,7 +1483,7 @@
           ccnt2 (if (.regular nm n2)
                   (let [m (mod cnt2 (bit-shift-left 1 shift))]
                     (if (zero? m) (bit-shift-left 1 shift) m))
-                  (aget (ranges nm n2) 0))
+                  (aget (ranges-macro nm n2) 0))
           next-transferred-leaves (Box. 0)
           [new-c1 new-c2] (zippath nm am (- shift 5) c1 ccnt1 c2 ccnt2
                                    next-transferred-leaves)
@@ -1514,10 +1514,10 @@
             new-arr  (object-array 33)
             rngs1    (take li1 (if (.regular nm n1)
                                  (regular-ranges shift cnt1)
-                                 (ranges nm n1)))
+                                 (ranges-macro nm n1)))
             rngs2    (take li2 (if (.regular nm n2)
                                  (regular-ranges shift cnt2)
-                                 (ranges nm n2)))
+                                 (ranges-macro nm n2)))
             rngs2    (let [r (last rngs1)]
                        (map #(+ % r) rngs2))
             rngs     (concat rngs1 rngs2)]
@@ -1647,7 +1647,7 @@
                                (aget ^objects arr idx)
                                (unchecked-subtract-int shift (int 5)))))))
                 (let [arr  (.array nm node)
-                      rngs (ranges nm node)
+                      rngs (ranges-macro nm node)
                       idx  (loop [j (bit-and (bit-shift-right i shift) (int 0x1f))]
                              (if (< i (aget rngs j))
                                j
@@ -1727,7 +1727,7 @@
             (let [new-arr  (object-array 33)
                   new-rngs (int-array 33)
                   new-root (.node nm (.edit nm root) new-arr)
-                  root-total-range (aget (ranges nm root) 31)]
+                  root-total-range (aget (ranges-macro nm root) 31)]
               (doto new-arr
                 (aset 0  root)
                 (aset 1  (.newPath transient-helper nm am
@@ -1851,7 +1851,7 @@
                   (recur (aget ^objects (.array nm node)
                                (bit-and (bit-shift-right i shift) (int 0x1f)))
                          (unchecked-subtract-int shift (int 5)))))
-              (let [rngs (ranges nm node)
+              (let [rngs (ranges-macro nm node)
                     j    (loop [j (bit-and (bit-shift-right i shift) (int 0x1f))]
                            (if (< i (aget rngs j))
                              j
